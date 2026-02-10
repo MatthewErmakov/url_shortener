@@ -1,0 +1,156 @@
+version: "3.9"
+
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: api-gateway
+    command: yarn start:dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+
+      USERS_HOST: users
+      USERS_PORT: 4001
+      SHORTENER_HOST: shortener
+      SHORTENER_PORT: 4002
+      REDIRECT_HOST: redirect
+      REDIRECT_PORT: 4003
+      ANALYTICS_HOST: analytics
+      ANALYTICS_PORT: 4004
+      QUOTA_HOST: quota
+      QUOTA_PORT: 4005
+
+      CHOKIDAR_USEPOLLING: 1
+      CHOKIDAR_INTERVAL: 200
+
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/usr/src/app
+    depends_on:
+      - users
+      - shortener
+      - redirect
+      - analytics
+      - quota
+      - db
+    networks:
+      - url-shortener-network
+
+  users:
+    build:
+      context: .
+      dockerfile: apps/users/Dockerfile
+    container_name: users
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      CHOKIDAR_USEPOLLING: 1
+      CHOKIDAR_INTERVAL: 200
+    expose:
+      - "3001"
+    networks:
+      - url-shortener-network
+
+  shortener:
+    build:
+      context: .
+      dockerfile: apps/shortener/Dockerfile
+    container_name: shortener
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3002
+      DATABASE_URL: ${DATABASE_URL}
+      CHOKIDAR_USEPOLLING: 1
+      CHOKIDAR_INTERVAL: 200
+    expose:
+      - "3002"
+    networks:
+      - url-shortener-network
+
+  redirect:
+    build:
+      context: .
+      dockerfile: apps/redirect/Dockerfile
+    container_name: redirect
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      CHOKIDAR_USEPOLLING: 1
+      CHOKIDAR_INTERVAL: 200
+    expose:
+      - "3003"
+    networks:
+      - url-shortener-network
+
+  analytics:
+    build:
+      context: .
+      dockerfile: apps/analytics/Dockerfile
+    container_name: analytics
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3004
+      DATABASE_URL: ${DATABASE_URL}
+      CHOKIDAR_USEPOLLING: 1
+      CHOKIDAR_INTERVAL: 200
+    expose:
+      - "3004"
+    volumes:
+      - ./:/usr/src/app
+    networks:
+      - url-shortener-network
+
+  quota:
+    build:
+      context: .
+      dockerfile: apps/quota/Dockerfile
+    container_name: quota
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3005
+      DATABASE_URL: ${DATABASE_URL}
+      CHOKIDAR_USEPOLLING: 1
+      CHOKIDAR_INTERVAL: 200
+    expose:
+      - "3005"
+    networks:
+      - url-shortener-network
+
+  db:
+    image: postgres:16
+    container_name: url-shortener-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: url_shortener
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d url_shortener"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - url-shortener-network
+
+volumes:
+  node_modules:
+  postgres_data:
+
+networks:
+  url-shortener-network:
+    driver: bridge
