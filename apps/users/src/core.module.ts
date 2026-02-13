@@ -1,14 +1,15 @@
-import { Module } from '@nestjs/common';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
+import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './users.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { buildTypeOrmOptions } from '../../../typeOrm.config';
-import { AuthModule } from './auth/auth.module';
+import { User } from './users/entities/users.entity';
+import { JwtModule } from '@nestjs/jwt';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
+@Global()
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -16,10 +17,16 @@ import { AuthModule } from './auth/auth.module';
             isGlobal: true,
         }),
 
-        TypeOrmModule.forRootAsync({
-            imports: [ConfigModule],
+        JwtModule.registerAsync({
             inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                secret: config.getOrThrow<string>('JWT_SECRET'),
+                signOptions: { expiresIn: '1d' },
+            }),
+        }),
 
+        TypeOrmModule.forRootAsync({
+            inject: [ConfigService],
             useFactory: (config: ConfigService) =>
                 buildTypeOrmOptions({
                     configService: config,
@@ -27,8 +34,6 @@ import { AuthModule } from './auth/auth.module';
                     entities: [User],
                 }),
         }),
-
-        TypeOrmModule.forFeature([User]),
 
         ClientsModule.registerAsync([
             {
@@ -68,10 +73,9 @@ import { AuthModule } from './auth/auth.module';
                 }),
             },
         ]),
-
-        AuthModule,
     ],
-    controllers: [UsersController],
-    providers: [UsersService],
+    controllers: [AppController],
+    providers: [AppService],
+    exports: [ClientsModule, JwtModule],
 })
-export class UsersModule {}
+export class CoreModule {}
