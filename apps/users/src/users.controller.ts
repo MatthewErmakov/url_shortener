@@ -6,9 +6,15 @@ import { MessagePattern } from '@nestjs/microservices';
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}
 
+    @Get('hello')
     @MessagePattern({ cmd: 'getHello' })
     getHello(): object {
         console.log('usersController.getHello called 321');
         return this.usersService.getHello();
+    }
+
+    @Get('hello-analytics')
+    getHelloAnalytics(): object {
+        return this.usersService.getHelloAnalytics();
     }
 }

@@ -16,6 +16,6 @@ RUN yarn install --immutable || yarn install
 
 COPY . .
 
-EXPOSE 4005
+EXPOSE 3002
 
 CMD ["sh", "-c", "yarn nest build quota; node dist/apps/quota/main"]

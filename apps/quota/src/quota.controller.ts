@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { QuotaService } from './quota.service';
+import { MessagePattern } from '@nestjs/microservices';
 
 @Controller()
 export class QuotaController {
@@ -7,6 +8,11 @@ export class QuotaController {
 
     @Get()
     getHello(): string {
+        return this.quotaService.getHello();
+    }
+
+    @MessagePattern({ cmd: 'get_quota' })
+    getQuotaMessage(): string {
         return this.quotaService.getHello();
     }
 }

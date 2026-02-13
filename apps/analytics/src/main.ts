@@ -1,23 +1,26 @@
 import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AnalyticsModule } from './analytics.module';
+import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
+    const host = process.env.ANALYTICS_HOST ?? 'localhost';
+    const port = Number(process.env.ANALYTICS_TCP_PORT ?? 3041);
+    const httpPort = Number(process.env.ANALYTICS_HTTP_PORT ?? 3001);
+
     const app = await NestFactory.create(AnalyticsModule, {
         logger: ['log', 'error', 'warn'],
     });
 
-    const config = app.get(ConfigService);
-
-    app.connectMicroservice<MicroserviceOptions>({
+    app.connectMicroservice({
         transport: Transport.TCP,
-        options: {
-            host: config.get<string>('ANALYTICS_HOST'),
-            port: config.get<number>('ANALYTICS_PORT'),
-        },
+        options: { host, port },
     });
 
     await app.startAllMicroservices();
+    await app.listen(httpPort, host);
+
+    console.log(`[Analytics] TCP listening on ${host}:${port}`);
+    console.log(`[Analytics] HTTP listening on http://${host}:${httpPort}`);
 }
+
 bootstrap();

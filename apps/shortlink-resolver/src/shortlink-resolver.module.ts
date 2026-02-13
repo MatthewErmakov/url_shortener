@@ -1,17 +1,17 @@
 import { Module } from '@nestjs/common';
-import { QuotaController } from './quota.controller';
-import { QuotaService } from './quota.service';
+import { ShortlinkResolverController } from './shortlink-resolver.controller';
+import { ShortlinkResolverService } from './shortlink-resolver.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { join } from 'path';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { buildTypeOrmOptions } from '../../../typeOrm.config';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
-            envFilePath: join(process.cwd(), '.env'),
             isGlobal: true,
+            envFilePath: '.env',
         }),
 
         TypeOrmModule.forRootAsync({
@@ -21,7 +21,7 @@ import { buildTypeOrmOptions } from '../../../typeOrm.config';
             useFactory: (config: ConfigService) =>
                 buildTypeOrmOptions({
                     configService: config,
-                    schema: 'quota',
+                    schema: 'shortlink_resolver',
                     entities: [],
                 }),
         }),
@@ -31,6 +31,7 @@ import { buildTypeOrmOptions } from '../../../typeOrm.config';
                 name: 'USERS_SERVICE',
                 imports: [ConfigModule],
                 inject: [ConfigService],
+
                 useFactory: (config: ConfigService) => ({
                     transport: Transport.TCP,
                     options: {
@@ -43,6 +44,7 @@ import { buildTypeOrmOptions } from '../../../typeOrm.config';
                 name: 'ANALYTICS_SERVICE',
                 imports: [ConfigModule],
                 inject: [ConfigService],
+
                 useFactory: (config: ConfigService) => ({
                     transport: Transport.TCP,
                     options: {
@@ -52,20 +54,30 @@ import { buildTypeOrmOptions } from '../../../typeOrm.config';
                 }),
             },
             {
-                name: 'SHORTLINK_SERVICE',
+                name: 'QUOTA_SERVICE',
                 imports: [ConfigModule],
                 inject: [ConfigService],
+
                 useFactory: (config: ConfigService) => ({
                     transport: Transport.TCP,
                     options: {
-                        host: config.get<string>('SHORTLINK_RESOLVER_HOST'),
-                        port: config.get<number>('SHORTLINK_RESOLVER_TCP_PORT'),
+                        host: config.get<string>('QUOTA_HOST'),
+                        port: config.get<number>('QUOTA_TCP_PORT'),
                     },
                 }),
             },
         ]),
+
+        JwtModule.registerAsync({
+            inject: [ConfigService],
+
+            useFactory: (config: ConfigService) => ({
+                secret: config.get<string>('JWT_SECRET'),
+                signOptions: { expiresIn: '1d' },
+            }),
+        }),
     ],
-    controllers: [QuotaController],
-    providers: [QuotaService],
+    controllers: [ShortlinkResolverController],
+    providers: [ShortlinkResolverService],
 })
-export class QuotaModule {}
+export class ShortlinkResolverModule {}

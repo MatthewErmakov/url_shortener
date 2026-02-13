@@ -1,30 +1,26 @@
-// main.ts
 import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-
 import { QuotaModule } from './quota.module';
+import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
-    const appContext = await NestFactory.createApplicationContext(QuotaModule, {
+    const host = process.env.QUOTA_HOST ?? 'localhost';
+    const port = Number(process.env.QUOTA_TCP_PORT ?? 3020);
+    const httpPort = Number(process.env.QUOTA_HTTP_PORT ?? 3002);
+
+    const app = await NestFactory.create(QuotaModule, {
         logger: ['log', 'error', 'warn'],
     });
 
-    const config: ConfigService = appContext.get(ConfigService);
+    app.connectMicroservice({
+        transport: Transport.TCP,
+        options: { host, port },
+    });
 
-    const host: string = config.get<string>('QUOTA_HOST') ?? 'localhost';
-    const port: number = Number(config.get<string>('QUOTA_PORT') ?? 4005);
+    await app.startAllMicroservices();
+    await app.listen(httpPort, host);
 
-    const microservice =
-        await NestFactory.createMicroservice<MicroserviceOptions>(QuotaModule, {
-            transport: Transport.TCP,
-            options: { host, port },
-            logger: ['log', 'error', 'warn'],
-        });
-
-    await microservice.listen();
-
-    console.log(`[UsersService] TCP microservice listening on ${host}:${port}`);
+    console.log(`[Quota] TCP listening on ${host}:${port}`);
+    console.log(`[Quota] HTTP listening on http://${host}:${httpPort}`);
 }
 
 bootstrap();

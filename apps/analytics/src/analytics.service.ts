@@ -4,6 +4,6 @@ import { Injectable } from '@nestjs/common';
 export class AnalyticsService {
     getHello(): object {
         console.log('AnalyticsService.getHello called 321 222');
-        return { message: 'Hello World! from Analytics Service 12312' };
+        return { message: 'Hello World! from Analytics Service 12312 2222' };
     }
 }

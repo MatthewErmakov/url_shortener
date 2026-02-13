@@ -16,6 +16,6 @@ RUN yarn install --immutable || yarn install
 
 COPY . .
 
-EXPOSE 4003
+EXPOSE 3004
 
-CMD ["sh", "-c", "yarn nest build redirect; node dist/apps/redirect/main"]
+CMD ["sh", "-c", "yarn nest build shortlink-resolver; node dist/apps/shortlink-resolver/main"]

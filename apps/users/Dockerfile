@@ -16,6 +16,6 @@ RUN yarn install --immutable || yarn install
 
 COPY . .
 
-EXPOSE 4001
+EXPOSE 3050
 
 CMD ["sh", "-c", "yarn nest build users; node dist/apps/users/main"]

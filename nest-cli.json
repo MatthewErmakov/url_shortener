@@ -1,68 +1,50 @@
 {
-  "$schema": "https://json.schemastore.org/nest-cli",
-  "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/api-gateway/src",
-  "compilerOptions": {
-    "deleteOutDir": true,
-    "webpack": true,
-    "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
-  },
-  "monorepo": true,
-  "root": "apps/api-gateway",
-  "projects": {
-    "analytics": {
-      "type": "application",
-      "root": "apps/analytics",
-      "entryFile": "main",
-      "sourceRoot": "apps/analytics/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/analytics/tsconfig.app.json"
-      }
+    "$schema": "https://json.schemastore.org/nest-cli",
+    "collection": "@nestjs/schematics",
+    "sourceRoot": "apps/shortlink-resolver/src",
+    "compilerOptions": {
+        "deleteOutDir": true,
+        "webpack": true,
+        "tsConfigPath": "apps/shortlink-resolver/tsconfig.app.json"
     },
-    "api-gateway": {
-      "type": "application",
-      "root": "apps/api-gateway",
-      "entryFile": "main",
-      "sourceRoot": "apps/api-gateway/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
-      }
-    },
-    "quota": {
-      "type": "application",
-      "root": "apps/quota",
-      "entryFile": "main",
-      "sourceRoot": "apps/quota/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/quota/tsconfig.app.json"
-      }
-    },
-    "redirect": {
-      "type": "application",
-      "root": "apps/redirect",
-      "entryFile": "main",
-      "sourceRoot": "apps/redirect/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/redirect/tsconfig.app.json"
-      }
-    },
-    "shortener": {
-      "type": "application",
-      "root": "apps/shortener",
-      "entryFile": "main",
-      "sourceRoot": "apps/shortener/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/shortener/tsconfig.app.json"
-      }
-    },
-    "users": {
-      "type": "application",
-      "root": "apps/users",
-      "entryFile": "main",
-      "sourceRoot": "apps/users/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/users/tsconfig.app.json"
-      }
+    "monorepo": true,
+    "root": "apps/api-gateway",
+    "projects": {
+        "analytics": {
+            "type": "application",
+            "root": "apps/analytics",
+            "entryFile": "main",
+            "sourceRoot": "apps/analytics/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/analytics/tsconfig.app.json"
+            }
+        },
+        "quota": {
+            "type": "application",
+            "root": "apps/quota",
+            "entryFile": "main",
+            "sourceRoot": "apps/quota/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/quota/tsconfig.app.json"
+            }
+        },
+        "shortlink-resolver": {
+            "type": "application",
+            "root": "apps/shortlink-resolver",
+            "entryFile": "main",
+            "sourceRoot": "apps/shortlink-resolver/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/shortlink-resolver/tsconfig.app.json"
+            }
+        },
+        "users": {
+            "type": "application",
+            "root": "apps/users",
+            "entryFile": "main",
+            "sourceRoot": "apps/users/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/users/tsconfig.app.json"
+            }
+        }
     }
-  }
 }

@@ -1,30 +1,25 @@
-// main.ts
 import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-
 import { UsersModule } from './users.module';
+import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
-    const appContext = await NestFactory.createApplicationContext(UsersModule, {
+    const host = process.env.USERS_HOST ?? 'localhost';
+    const port = Number(process.env.USERS_TCP_PORT ?? 3005);
+    const httpPort = Number(process.env.USERS_HTTP_PORT ?? 3050);
+
+    const app = await NestFactory.create(UsersModule, {
         logger: ['log', 'error', 'warn'],
     });
 
-    const config: ConfigService = appContext.get(ConfigService);
+    app.connectMicroservice({
+        transport: Transport.TCP,
+        options: { host, port },
+    });
 
-    const host: string = config.get<string>('USERS_HOST') ?? 'localhost';
-    const port: number = Number(config.get<string>('USERS_PORT') ?? 4001);
+    await app.startAllMicroservices();
+    await app.listen(httpPort, host);
 
-    const microservice =
-        await NestFactory.createMicroservice<MicroserviceOptions>(UsersModule, {
-            transport: Transport.TCP,
-            options: { host, port },
-            logger: ['log', 'error', 'warn'],
-        });
-
-    await microservice.listen();
-
-    console.log(`[UsersService] TCP microservice listening on ${host}:${port}`);
+    console.log(`[UsersService] TCP listening on ${host}:${port}`);
+    console.log(`[UsersService] HTTP listening on http://${host}:${httpPort}`);
 }
-
 bootstrap();

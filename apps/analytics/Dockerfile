@@ -15,6 +15,6 @@ RUN yarn install --immutable || yarn install
 
 COPY . .
 
-EXPOSE 4004
+EXPOSE 3001
 
 CMD ["sh", "-c", "yarn nest build analytics; node dist/apps/analytics/main"]
