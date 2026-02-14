@@ -1,32 +1,65 @@
-import { Body, Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Inject,
+    Injectable,
+    UnauthorizedException,
+} from '@nestjs/common';
+import { LoginUserDTO } from './dto/login-user.dto';
+import { UsersService } from '../users/users.service';
+import { User } from '../users/entities/users.entity';
 import { JwtService } from '@nestjs/jwt';
-import { RegisterUser } from './dto/register-user.dto';
-import { LoginUser } from './dto/login-user.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AuthorizedDTO } from './dto/authorized.dto';
+import bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-    constructor(private readonly jwtService: JwtService) {}
+    constructor(
+        private readonly usersService: UsersService,
+        private readonly jwtService: JwtService,
 
-    register(registerUserDTO: RegisterUser): object {
+        @InjectRepository(User)
+        private readonly usersRepository: Repository<User>,
+    ) {}
+
+    async login(loginUserDTO: LoginUserDTO): Promise<AuthorizedDTO> {
+        const user = await this.usersService.findByEmail(loginUserDTO.email);
+
+        if (!user) {
+            throw new BadRequestException('Invalid credentials.');
+        }
+
+        const passwordsMatch: boolean = await bcrypt.compare(
+            loginUserDTO.password,
+            user.password,
+        );
+
+        if (!passwordsMatch) {
+            throw new BadRequestException('Invalid credentials.');
+        }
+
         return {
-            accessToken: this.jwtService.sign({
-                email: 'blalbaasdas@asdas.com',
-                password: '232232',
+            accessToken: await this.jwtService.signAsync({
+                sub: user.id,
+                email: user.email,
             }),
         };
     }
 
-    login(loginUserDTO: LoginUser): object {
-        return {
-            accessToken: this.jwtService.verify('123'),
-        };
-    }
+    async findByToken(token: string): Promise<User> {
+        const decoded = await this.jwtService.decode(token);
 
-    verifyToken(token: string): object {
-        try {
-            return this.jwtService.verify(token);
-        } catch (error) {
-            return error;
+        const user = await this.usersRepository.findOne({
+            where: {
+                id: decoded.sub,
+            },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException('Invalid token.');
         }
+
+        return user;
     }
 }

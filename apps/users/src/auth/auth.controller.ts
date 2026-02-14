@@ -1,33 +1,22 @@
-import {
-    Controller,
-    Get,
-    Post,
-    Body,
-    Patch,
-    Param,
-    Delete,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterUser } from './dto/register-user.dto';
-import { LoginUser } from './dto/login-user.dto';
+import { LoginUserDTO } from './dto/login-user.dto';
+import { AuthorizedDTO } from './dto/authorized.dto';
+import { ApiKeyGuard, JwtPayload } from '@libs/auth-jwt';
+import type { AuthenticatedRequest } from '../../../../libs/auth-jwt/src/interfaces/authenticated-request.interface';
 
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
-    @Post('register')
-    register(@Body() registerUserDTO: RegisterUser) {
-        return this.authService.register(registerUserDTO);
+    @UseGuards(ApiKeyGuard)
+    @Get('me')
+    async me(@Req() req: AuthenticatedRequest): Promise<JwtPayload> {
+        return req.user;
     }
 
     @Post('login')
-    login(@Body() loginUserDTO: LoginUser) {
-        return this.authService.login(loginUserDTO);
-    }
-
-    @Get('verify-token/:token')
-    verifyToken(@Param('token') token: string): object {
-        console.log(token);
-        return this.authService.verifyToken(token);
+    async login(@Body() loginUserDTO: LoginUserDTO): Promise<AuthorizedDTO> {
+        return await this.authService.login(loginUserDTO);
     }
 }

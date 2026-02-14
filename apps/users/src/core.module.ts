@@ -1,25 +1,55 @@
-import { Module } from '@nestjs/common';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
+import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './users.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { buildTypeOrmOptions } from '../../../typeOrm.config';
-import { AuthModule } from './auth/auth.module';
+import { User } from './users/entities/users.entity';
+import { JwtModule } from '@nestjs/jwt';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { readFileSync } from 'fs';
 
+@Global()
 @Module({
     imports: [
         ConfigModule.forRoot({
-            envFilePath: join(process.cwd(), '.env'),
+            envFilePath: [
+                join(process.cwd(), '.env'),
+                join(process.cwd(), '.env.users'),
+            ],
             isGlobal: true,
         }),
 
-        TypeOrmModule.forRootAsync({
-            imports: [ConfigModule],
+        JwtModule.registerAsync({
             inject: [ConfigService],
+            useFactory: (config: ConfigService) => {
+                const privateKey = readFileSync(
+                    config.getOrThrow<string>('JWT_PRIVATE_KEY_PATH'),
+                    'utf8',
+                );
+                const publicKey = readFileSync(
+                    config.getOrThrow<string>('JWT_PUBLIC_KEY_PATH'),
+                    'utf8',
+                );
 
+                return {
+                    privateKey,
+                    publicKey,
+                    signOptions: {
+                        algorithm: 'RS256',
+                        expiresIn: '1d',
+                        keyid: config.getOrThrow<string>('JWT_KID'),
+                    },
+                    verifyOptions: {
+                        algorithms: ['RS256'],
+                    },
+                };
+            },
+        }),
+
+        TypeOrmModule.forRootAsync({
+            inject: [ConfigService],
             useFactory: (config: ConfigService) =>
                 buildTypeOrmOptions({
                     configService: config,
@@ -27,8 +57,6 @@ import { AuthModule } from './auth/auth.module';
                     entities: [User],
                 }),
         }),
-
-        TypeOrmModule.forFeature([User]),
 
         ClientsModule.registerAsync([
             {
@@ -68,10 +96,9 @@ import { AuthModule } from './auth/auth.module';
                 }),
             },
         ]),
-
-        AuthModule,
     ],
-    controllers: [UsersController],
-    providers: [UsersService],
+    controllers: [AppController],
+    providers: [AppService],
+    exports: [ClientsModule, JwtModule],
 })
-export class UsersModule {}
+export class CoreModule {}
