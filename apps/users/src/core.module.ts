@@ -8,21 +8,44 @@ import { User } from './users/entities/users.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { readFileSync } from 'fs';
 
 @Global()
 @Module({
     imports: [
         ConfigModule.forRoot({
-            envFilePath: join(process.cwd(), '.env'),
+            envFilePath: [
+                join(process.cwd(), '.env'),
+                join(process.cwd(), '.env.users'),
+            ],
             isGlobal: true,
         }),
 
         JwtModule.registerAsync({
             inject: [ConfigService],
-            useFactory: (config: ConfigService) => ({
-                secret: config.getOrThrow<string>('JWT_SECRET'),
-                signOptions: { expiresIn: '1d' },
-            }),
+            useFactory: (config: ConfigService) => {
+                const privateKey = readFileSync(
+                    config.getOrThrow<string>('JWT_PRIVATE_KEY_PATH'),
+                    'utf8',
+                );
+                const publicKey = readFileSync(
+                    config.getOrThrow<string>('JWT_PUBLIC_KEY_PATH'),
+                    'utf8',
+                );
+
+                return {
+                    privateKey,
+                    publicKey,
+                    signOptions: {
+                        algorithm: 'RS256',
+                        expiresIn: '1d',
+                        keyid: config.getOrThrow<string>('JWT_KID'),
+                    },
+                    verifyOptions: {
+                        algorithms: ['RS256'],
+                    },
+                };
+            },
         }),
 
         TypeOrmModule.forRootAsync({

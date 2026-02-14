@@ -1,19 +1,9 @@
-import {
-    Body,
-    Controller,
-    Get,
-    Headers,
-    Post,
-    Req,
-    UseGuards,
-    ValidationPipe,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginUserDTO } from './dto/login-user.dto';
-import { User } from '../users/entities/users.entity';
 import { AuthorizedDTO } from './dto/authorized.dto';
-import { MeDTO } from './dto/me.dto';
-import { ApiKeyGuard } from './guards/api-key.guard';
+import { ApiKeyGuard, JwtPayload } from '@libs/auth-jwt';
+import type { AuthenticatedRequest } from '../../../../libs/auth-jwt/src/interfaces/authenticated-request.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -21,7 +11,7 @@ export class AuthController {
 
     @UseGuards(ApiKeyGuard)
     @Get('me')
-    async me(@Req() req: AuthenticatedRequest): Promise<User> {
+    async me(@Req() req: AuthenticatedRequest): Promise<JwtPayload> {
         return req.user;
     }
 

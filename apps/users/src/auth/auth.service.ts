@@ -1,4 +1,9 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Inject,
+    Injectable,
+    UnauthorizedException,
+} from '@nestjs/common';
 import { LoginUserDTO } from './dto/login-user.dto';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/users.entity';
@@ -6,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthorizedDTO } from './dto/authorized.dto';
+import bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +27,16 @@ export class AuthService {
         const user = await this.usersService.findByEmail(loginUserDTO.email);
 
         if (!user) {
-            throw new UnauthorizedException('Invalid credentials.');
+            throw new BadRequestException('Invalid credentials.');
+        }
+
+        const passwordsMatch: boolean = await bcrypt.compare(
+            loginUserDTO.password,
+            user.password,
+        );
+
+        if (!passwordsMatch) {
+            throw new BadRequestException('Invalid credentials.');
         }
 
         return {
