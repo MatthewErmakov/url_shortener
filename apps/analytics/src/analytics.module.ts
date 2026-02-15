@@ -2,18 +2,21 @@ import { Module } from '@nestjs/common';
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Analytics } from './analytics.entity';
+import { Analytics } from './entities/analytics.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { buildTypeOrmOptions } from '../../../typeOrm.config';
+import { AuthJwtModule } from '@libs/auth-jwt';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
-            envFilePath: join(process.cwd(), '.env'),
+            envFilePath: [join(process.cwd(), '.env')],
             isGlobal: true,
         }),
+
+        AuthJwtModule,
 
         ClientsModule.registerAsync([
             {
@@ -39,18 +42,6 @@ import { buildTypeOrmOptions } from '../../../typeOrm.config';
                         port: config.get<number>(
                             'SHORTLINKS_RESOLVER_TCP_PORT',
                         ),
-                    },
-                }),
-            },
-            {
-                name: 'QUOTA_SERVICE',
-                imports: [ConfigModule],
-                inject: [ConfigService],
-                useFactory: (config: ConfigService) => ({
-                    transport: Transport.TCP,
-                    options: {
-                        host: config.get<string>('QUOTA_HOST'),
-                        port: config.get<number>('QUOTA_TCP_PORT'),
                     },
                 }),
             },

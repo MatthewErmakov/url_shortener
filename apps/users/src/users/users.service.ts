@@ -1,10 +1,16 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    Inject,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Repository } from 'typeorm';
 import { User } from './entities/users.entity';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthorizedDTO } from '../auth/dto/authorized.dto';
+import { SubscriptionType } from '@libs/shared';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
@@ -37,8 +43,6 @@ export class UsersService {
             throw new BadRequestException('User already registered.');
         }
 
-        console.log(`usr_${crypto.randomBytes(28).toString('hex')}`);
-
         const user = await this.usersRepository.create({
             email,
             xApiKey: `usr_${crypto.randomBytes(28).toString('hex')}`,
@@ -66,5 +70,30 @@ export class UsersService {
                 id: id,
             },
         });
+    }
+
+    async getUserSubscriptionType(userId: string): Promise<{
+        userId: string;
+        subscriptionType: SubscriptionType;
+    }> {
+        const parsedUserId = Number(userId);
+
+        if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+            throw new BadRequestException('Invalid userId.');
+        }
+
+        const user = await this.usersRepository.findOne({
+            where: { id: parsedUserId },
+            select: ['id', 'subscriptionType'],
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found.');
+        }
+
+        return {
+            userId: String(user.id),
+            subscriptionType: user.subscriptionType,
+        };
     }
 }

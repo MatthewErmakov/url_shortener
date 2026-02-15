@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AnalyticsModule } from './analytics.module';
 import { Transport } from '@nestjs/microservices';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
     const host = process.env.ANALYTICS_HOST ?? 'localhost';
@@ -15,6 +16,14 @@ async function bootstrap() {
         transport: Transport.TCP,
         options: { host, port },
     });
+
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            transform: true,
+        }),
+    );
 
     await app.startAllMicroservices();
     await app.listen(httpPort, host);

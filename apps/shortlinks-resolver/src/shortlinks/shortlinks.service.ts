@@ -2,6 +2,7 @@ import {
     BadRequestException,
     ConflictException,
     ForbiddenException,
+    Inject,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
@@ -13,14 +14,18 @@ import { And, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
 import { JwtPayload } from '@libs/auth-jwt';
 import { SubscriptionType } from '@libs/shared';
 import crypto from 'crypto';
-
-type ShortLinkResponse = ShortLink & { shortenedUrl: string };
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
+import {
+    PaginatedShortlinksResponseDto,
+    ShortLinkResponse,
+} from './dto/paginated-shortlinks-response.dto';
 
 @Injectable()
 export class ShortlinksService {
-    /**
-     * FIXME: by moving to QUOTA service
-     */
+    private static readonly DEFAULT_LIMIT = 50;
+    private static readonly MAX_LIMIT = 200;
+
     private static readonly MONTHLY_LIMIT_BY_SUBSCRIPTION: Record<
         SubscriptionType,
         number
@@ -30,6 +35,9 @@ export class ShortlinksService {
     };
 
     constructor(
+        @Inject('USERS_SERVICE')
+        private readonly usersClient: ClientProxy,
+
         @InjectRepository(ShortLink)
         private readonly shortLinkRepo: Repository<ShortLink>,
     ) {}
@@ -51,17 +59,43 @@ export class ShortlinksService {
         return this.createWithMonthlyLimit(user, createShortlinkDto);
     }
 
-    async findAll(user: JwtPayload): Promise<ShortLinkResponse[]> {
-        const shortLinks = await this.shortLinkRepo.find({
-            where: {
-                userId: user.sub,
-            },
-        });
+    async findAll(
+        user: JwtPayload,
+        limit?: number,
+        offset?: number,
+    ): Promise<PaginatedShortlinksResponseDto> {
+        const safeLimit = this.resolveLimit(limit);
+        const safeOffset = this.resolveOffset(offset);
 
-        return shortLinks.map((shortLink) => ({
-            ...shortLink,
-            shortenedUrl: this.buildShortenedUrl(shortLink.shortCode),
-        }));
+        const [total, shortLinks] = await Promise.all([
+            this.shortLinkRepo.count({
+                where: {
+                    userId: user.sub,
+                },
+            }),
+            this.shortLinkRepo.find({
+                where: {
+                    userId: user.sub,
+                },
+                order: {
+                    createdAt: 'DESC',
+                },
+                take: safeLimit,
+                skip: safeOffset,
+            }),
+        ]);
+
+        return {
+            data: shortLinks.map((shortLink) => ({
+                ...shortLink,
+                shortenedUrl: this.buildShortenedUrl(shortLink.shortCode),
+            })),
+            pagination: {
+                limit: safeLimit,
+                offset: safeOffset,
+                total,
+            },
+        };
     }
 
     async findOne(
@@ -93,13 +127,38 @@ export class ShortlinksService {
         return `This action removes a #${id} shortlink`;
     }
 
+    private resolveLimit(limit?: number): number {
+        if (!limit) {
+            return ShortlinksService.DEFAULT_LIMIT;
+        }
+
+        return Math.min(limit, ShortlinksService.MAX_LIMIT);
+    }
+
+    private resolveOffset(offset?: number): number {
+        if (!offset) {
+            return 0;
+        }
+
+        return Math.max(offset, 0);
+    }
+
     private async getUserSubscriptionType(
-        _user: JwtPayload,
+        user: JwtPayload,
     ): Promise<SubscriptionType> {
-        /**
-         * FIXME: integrate "QUOTA" service in here
-         */
-        return SubscriptionType.FREE;
+        return (
+            await firstValueFrom(
+                this.usersClient.send<{
+                    userId: string;
+                    subscriptionType: SubscriptionType;
+                }>(
+                    { cmd: 'get_user_subscription_type' },
+                    {
+                        userId: user.sub,
+                    },
+                ),
+            )
+        ).subscriptionType;
     }
 
     private getCurrentMonthUtcRange(now: Date = new Date()): {

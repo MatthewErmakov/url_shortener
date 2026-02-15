@@ -9,6 +9,7 @@ import {
     UseGuards,
     Req,
     ParseArrayPipe,
+    Query,
 } from '@nestjs/common';
 import { ShortlinksService } from './shortlinks.service';
 import { CreateShortlinkDto } from './dto/create-shortlink.dto';
@@ -16,6 +17,8 @@ import { UpdateShortlinkDto } from './dto/update-shortlink.dto';
 import { ApiKeyGuard } from '@libs/auth-jwt';
 import type { AuthenticatedRequest } from '@libs/auth-jwt/interfaces/authenticated-request.interface';
 import { ShortLink } from './entities/shortlink.entity';
+import { GetShortlinksQueryDto } from './dto/get-shortlinks-query.dto';
+import { PaginatedShortlinksResponseDto } from './dto/paginated-shortlinks-response.dto';
 
 @UseGuards(ApiKeyGuard)
 @Controller('shortlinks')
@@ -49,8 +52,15 @@ export class ShortlinksController {
     }
 
     @Get()
-    findAll(@Req() req: AuthenticatedRequest) {
-        return this.shortlinksService.findAll(req.user);
+    findAll(
+        @Req() req: AuthenticatedRequest,
+        @Query() query: GetShortlinksQueryDto,
+    ): Promise<PaginatedShortlinksResponseDto> {
+        return this.shortlinksService.findAll(
+            req.user,
+            query.limit,
+            query.offset,
+        );
     }
 
     @Get(':shortcode')
