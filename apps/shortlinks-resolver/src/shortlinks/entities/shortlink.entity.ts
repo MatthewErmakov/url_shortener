@@ -20,7 +20,7 @@ export class ShortLink {
     userId: string;
 
     @Index({ unique: true })
-    @Column({ name: 'shortcode', length: 12 })
+    @Column({ name: 'shortcode', length: 8 })
     shortCode: string;
 
     @Column({ name: 'original_url', type: 'text' })

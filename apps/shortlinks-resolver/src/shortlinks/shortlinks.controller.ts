@@ -8,6 +8,7 @@ import {
     Delete,
     UseGuards,
     Req,
+    ParseArrayPipe,
 } from '@nestjs/common';
 import { ShortlinksService } from './shortlinks.service';
 import { CreateShortlinkDto } from './dto/create-shortlink.dto';
@@ -22,22 +23,40 @@ export class ShortlinksController {
     constructor(private readonly shortlinksService: ShortlinksService) {}
 
     @Post()
-    async create(
+    async createOne(
         @Req() req: AuthenticatedRequest,
         @Body() createShortlinkDto: CreateShortlinkDto,
     ): Promise<ShortLink> {
-        return this.shortlinksService.create(req.user, createShortlinkDto);
+        return this.shortlinksService.createOne(req.user, createShortlinkDto);
+    }
+
+    @Post('bulk')
+    async createMany(
+        @Req() req: AuthenticatedRequest,
+        @Body(
+            new ParseArrayPipe({
+                items: CreateShortlinkDto,
+                whitelist: true,
+                forbidNonWhitelisted: true,
+            }),
+        )
+        createShortlinkDtoArr: CreateShortlinkDto[],
+    ): Promise<ShortLink[]> {
+        return this.shortlinksService.createMany(
+            req.user,
+            createShortlinkDtoArr,
+        );
     }
 
     @Get()
-    findAll() {
-        return this.shortlinksService.findAll();
+    findAll(@Req() req: AuthenticatedRequest) {
+        return this.shortlinksService.findAll(req.user);
     }
 
-    @Get(':short_code')
+    @Get(':shortcode')
     findOne(
         @Req() req: AuthenticatedRequest,
-        @Param('short_code') shortCode: string,
+        @Param('shortcode') shortCode: string,
     ): object {
         return this.shortlinksService.findOne(req.user, shortCode);
     }

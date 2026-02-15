@@ -5,6 +5,7 @@ import {
     IsString,
     IsUrl,
     Matches,
+    MaxLength,
 } from 'class-validator';
 import { IsNull } from 'typeorm';
 
@@ -13,6 +14,7 @@ export class CreateShortlinkDto {
     @IsString()
     @Matches(/^[a-zA-Z0-9_-]{3,32}$/)
     @Expose({ name: 'shortcode' })
+    @MaxLength(8)
     shortCode: string;
 
     @IsUrl()

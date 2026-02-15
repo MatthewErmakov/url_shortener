@@ -17,7 +17,7 @@ import type { Response } from 'express';
 export class AppController {
     constructor(private readonly appService: AppService) {}
 
-    @Get('/:shortCode')
+    @Get('/r/:shortCode')
     async redirect(
         @Param('shortCode') shortCode: string,
         @Res() res: Response,

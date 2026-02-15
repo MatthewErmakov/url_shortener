@@ -38,7 +38,7 @@ import { readFileSync } from 'fs';
                     publicKey,
                     signOptions: {
                         algorithm: 'RS256',
-                        expiresIn: '1d',
+                        expiresIn: '15m',
                         keyid: config.getOrThrow<string>('JWT_KID'),
                     },
                     verifyOptions: {
