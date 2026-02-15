@@ -26,8 +26,9 @@ export class AppService {
          * Instead of 410 code use 404 for safety purposes
          */
         if (
-            (shortLink?.expiresAt && shortLink.expiresAt < new Date()) ||
-            !shortLink
+            shortLink &&
+            shortLink.expiresAt &&
+            shortLink.expiresAt < new Date()
         ) {
             throw new NotFoundException('Shortcode not defined.');
         }

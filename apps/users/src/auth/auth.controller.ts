@@ -12,7 +12,6 @@ import { LoginUserDTO } from './dto/login-user.dto';
 import { AuthorizedDTO } from './dto/authorized.dto';
 import { ApiKeyGuard, JwtPayload } from '@libs/auth-jwt';
 import type { AuthenticatedRequest } from '../../../../libs/auth-jwt/src/interfaces/authenticated-request.interface';
-import { XApiKeyDTO } from './dto/x-api-key.dto';
 import { AccessTokenDTO } from './dto/access-token.dto';
 
 @Controller('auth')
@@ -31,7 +30,9 @@ export class AuthController {
     }
 
     @Post('token')
-    async getToken(@Headers() tokenDTO: XApiKeyDTO): Promise<AccessTokenDTO> {
-        return await this.authService.generateTokenByApiKey(tokenDTO.xApiKey);
+    async getToken(
+        @Headers('x-api-key') xApiKey: string,
+    ): Promise<AccessTokenDTO> {
+        return await this.authService.generateTokenByApiKey(xApiKey);
     }
 }
