@@ -64,6 +64,10 @@ export class AuthService {
     }
 
     async generateTokenByApiKey(apiKey: string): Promise<AccessTokenDTO> {
+        if (!apiKey) {
+            throw new BadRequestException('Invalid x-api-key header.');
+        }
+
         const user = await this.usersRepository.findOne({
             where: {
                 xApiKey: apiKey,
@@ -71,7 +75,7 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new BadRequestException('Invalid x-api-key provided.');
+            throw new BadRequestException('Invalid x-api-key header.');
         }
 
         return {
