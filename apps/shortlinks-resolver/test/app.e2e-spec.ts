@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { ShortlinkResolverModule } from '../src/shortlink-resolver.module';
+import { ShortlinkResolverModule } from '../src/app.module';
 
 describe('ShortlinkResolverController (e2e)', () => {
     let app: INestApplication;

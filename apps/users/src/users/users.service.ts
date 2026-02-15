@@ -36,18 +36,17 @@ export class UsersService {
             throw new BadRequestException('User already registered.');
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-
         const user = await this.usersRepository.create({
             email,
-            password: hashedPassword,
+            password: await bcrypt.hash(password, 10),
         });
         const saved = await this.usersRepository.save(user);
 
-        const payload = { sub: saved.id, email: saved.email };
-
         return {
-            accessToken: this.jwtService.sign(payload),
+            accessToken: this.jwtService.sign({
+                sub: saved.id,
+                email: saved.email,
+            }),
         };
     }
 
@@ -62,8 +61,8 @@ export class UsersService {
     async findById(id: number): Promise<User | null> {
         return this.usersRepository.findOne({
             where: {
-                id: id
-            }
-        })
+                id: id,
+            },
+        });
     }
 }

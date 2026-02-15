@@ -18,4 +18,4 @@ COPY . .
 
 EXPOSE 3004
 
-CMD ["sh", "-c", "yarn nest build shortlink-resolver; node dist/apps/shortlink-resolver/main"]
+CMD ["sh", "-c", "yarn nest build shortlinks-resolver; node dist/apps/shortlinks-resolver/main"]

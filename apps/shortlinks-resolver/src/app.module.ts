@@ -1,18 +1,28 @@
 import { Module } from '@nestjs/common';
-import { ShortlinkResolverController } from './shortlink-resolver.controller';
-import { ShortlinkResolverService } from './shortlink-resolver.service';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { buildTypeOrmOptions } from '../../../typeOrm.config';
 import { JwtModule } from '@nestjs/jwt';
+import { ShortlinksModule } from './shortlinks/shortlinks.module';
+import { JwtApiKeyStrategy } from '@libs/auth-jwt';
+import { join } from 'path';
+import { User } from 'apps/users/src/users/entities/users.entity';
+import { ShortLink } from './shortlinks/entities/shortlink.entity';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
+            envFilePath: [
+                join(process.cwd(), '.env'),
+                join(process.cwd(), '.env.users'),
+            ],
             isGlobal: true,
-            envFilePath: '.env',
         }),
+
+        TypeOrmModule.forFeature([ShortLink]),
 
         TypeOrmModule.forRootAsync({
             imports: [ConfigModule],
@@ -21,8 +31,8 @@ import { JwtModule } from '@nestjs/jwt';
             useFactory: (config: ConfigService) =>
                 buildTypeOrmOptions({
                     configService: config,
-                    schema: 'shortlink_resolver',
-                    entities: [],
+                    schema: 'shortlinks_resolver',
+                    entities: [ShortLink],
                 }),
         }),
 
@@ -76,8 +86,10 @@ import { JwtModule } from '@nestjs/jwt';
                 signOptions: { expiresIn: '1d' },
             }),
         }),
+
+        ShortlinksModule,
     ],
-    controllers: [ShortlinkResolverController],
-    providers: [ShortlinkResolverService],
+    controllers: [AppController],
+    providers: [AppService, JwtApiKeyStrategy],
 })
-export class ShortlinkResolverModule {}
+export class AppModule {}

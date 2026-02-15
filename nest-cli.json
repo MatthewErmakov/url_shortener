@@ -1,11 +1,11 @@
 {
     "$schema": "https://json.schemastore.org/nest-cli",
     "collection": "@nestjs/schematics",
-    "sourceRoot": "apps/shortlink-resolver/src",
+    "sourceRoot": "apps/shortlinks-resolver/src",
     "compilerOptions": {
         "deleteOutDir": true,
         "webpack": true,
-        "tsConfigPath": "apps/shortlink-resolver/tsconfig.app.json"
+        "tsConfigPath": "apps/shortlinks-resolver/tsconfig.app.json"
     },
     "monorepo": true,
     "root": "apps/api-gateway",
@@ -28,13 +28,13 @@
                 "tsConfigPath": "apps/quota/tsconfig.app.json"
             }
         },
-        "shortlink-resolver": {
+        "shortlinks-resolver": {
             "type": "application",
-            "root": "apps/shortlink-resolver",
+            "root": "apps/shortlinks-resolver",
             "entryFile": "main",
-            "sourceRoot": "apps/shortlink-resolver/src",
+            "sourceRoot": "apps/shortlinks-resolver/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/shortlink-resolver/tsconfig.app.json"
+                "tsConfigPath": "apps/shortlinks-resolver/tsconfig.app.json"
             }
         },
         "users": {

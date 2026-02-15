@@ -1,13 +1,14 @@
 import { NestFactory } from '@nestjs/core';
-import { ShortlinkResolverModule } from './shortlink-resolver.module';
+import { AppModule } from './app.module';
 import { Transport } from '@nestjs/microservices';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-    const host = process.env.SHORTLINK_RESOLVER_HOST ?? 'localhost';
-    const port = Number(process.env.SHORTLINK_RESOLVER_TCP_PORT ?? 3040);
-    const httpPort = Number(process.env.SHORTLINK_RESOLVER_HTTP_PORT ?? 3004);
+    const host = process.env.SHORTLINKS_RESOLVER_HOST ?? 'localhost';
+    const port = Number(process.env.SHORTLINKS_RESOLVER_TCP_PORT ?? 3040);
+    const httpPort = Number(process.env.SHORTLINKS_RESOLVER_HTTP_PORT ?? 3004);
 
-    const app = await NestFactory.create(ShortlinkResolverModule, {
+    const app = await NestFactory.create(AppModule, {
         logger: ['log', 'error', 'warn'],
     });
 
@@ -15,6 +16,14 @@ async function bootstrap() {
         transport: Transport.TCP,
         options: { host, port },
     });
+
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            transform: true,
+        }),
+    );
 
     await app.startAllMicroservices();
     await app.listen(httpPort, host);
