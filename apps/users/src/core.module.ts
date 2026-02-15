@@ -38,7 +38,7 @@ import { readFileSync } from 'fs';
                     publicKey,
                     signOptions: {
                         algorithm: 'RS256',
-                        expiresIn: '1d',
+                        expiresIn: '15m',
                         keyid: config.getOrThrow<string>('JWT_KID'),
                     },
                     verifyOptions: {
@@ -72,14 +72,16 @@ import { readFileSync } from 'fs';
                 }),
             },
             {
-                name: 'SHORTLINK_SERVICE',
+                name: 'SHORTLINKS_SERVICE',
                 imports: [ConfigModule],
                 inject: [ConfigService],
                 useFactory: (config: ConfigService) => ({
                     transport: Transport.TCP,
                     options: {
-                        host: config.get<string>('SHORTLINK_RESOLVER_HOST'),
-                        port: config.get<number>('SHORTLINK_RESOLVER_TCP_PORT'),
+                        host: config.get<string>('SHORTLINKS_RESOLVER_HOST'),
+                        port: config.get<number>(
+                            'SHORTLINKS_RESOLVER_TCP_PORT',
+                        ),
                     },
                 }),
             },

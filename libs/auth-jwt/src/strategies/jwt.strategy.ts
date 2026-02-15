@@ -15,7 +15,10 @@ export class JwtApiKeyStrategy extends PassportStrategy(
     constructor(config: ConfigService) {
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
-                (req: Request) => req?.headers['x-api-key'] as string,
+                (req: Request) => {
+                    const auth = req?.headers['authorization'] as string;
+                    return auth?.replace(/^Bearer\s+/i, '');
+                },
             ]),
             secretOrKey: readFileSync(
                 config.getOrThrow<string>('JWT_PUBLIC_KEY_PATH'),

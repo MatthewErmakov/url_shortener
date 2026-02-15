@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthorizedDTO } from '../auth/dto/authorized.dto';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 @Injectable()
 export class UsersService {
@@ -36,18 +37,18 @@ export class UsersService {
             throw new BadRequestException('User already registered.');
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        console.log(`usr_${crypto.randomBytes(28).toString('hex')}`);
 
         const user = await this.usersRepository.create({
             email,
-            password: hashedPassword,
+            xApiKey: `usr_${crypto.randomBytes(28).toString('hex')}`,
+            password: await bcrypt.hash(password, 10),
         });
         const saved = await this.usersRepository.save(user);
 
-        const payload = { sub: saved.id, email: saved.email };
-
         return {
-            accessToken: this.jwtService.sign(payload),
+            email: user.email,
+            xApiKey: user.xApiKey,
         };
     }
 
@@ -62,8 +63,8 @@ export class UsersService {
     async findById(id: number): Promise<User | null> {
         return this.usersRepository.findOne({
             where: {
-                id: id
-            }
-        })
+                id: id,
+            },
+        });
     }
 }

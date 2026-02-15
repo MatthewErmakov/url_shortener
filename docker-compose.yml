@@ -16,18 +16,18 @@ services:
         networks:
             - url-shortener-network
 
-    shortlink-resolver:
+    shortlinks-resolver:
         build:
             context: .
-            dockerfile: apps/shortlink-resolver/Dockerfile
-        container_name: shortlink-resolver
+            dockerfile: apps/shortlinks-resolver/Dockerfile
+        container_name: shortlinks-resolver
         restart: unless-stopped
         env_file:
             - .env
         ports:
-            - '${SHORTLINK_RESOLVER_HTTP_PORT}:${SHORTLINK_RESOLVER_HTTP_PORT}'
+            - '${SHORTLINKS_RESOLVER_HTTP_PORT}:${SHORTLINKS_RESOLVER_HTTP_PORT}'
         expose:
-            - '${SHORTLINK_RESOLVER_TCP_PORT}'
+            - '${SHORTLINKS_RESOLVER_TCP_PORT}'
         networks:
             - url-shortener-network
 
