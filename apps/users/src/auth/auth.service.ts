@@ -12,6 +12,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthorizedDTO } from './dto/authorized.dto';
 import bcrypt from 'bcrypt';
+import { AccessTokenDTO } from './dto/access-token.dto';
+import { use } from 'passport';
 
 @Injectable()
 export class AuthService {
@@ -40,10 +42,8 @@ export class AuthService {
         }
 
         return {
-            accessToken: await this.jwtService.signAsync({
-                sub: user.id,
-                email: user.email,
-            }),
+            email: user.email,
+            xApiKey: user.xApiKey,
         };
     }
 
@@ -61,5 +61,24 @@ export class AuthService {
         }
 
         return user;
+    }
+
+    async generateTokenByApiKey(apiKey: string): Promise<AccessTokenDTO> {
+        const user = await this.usersRepository.findOne({
+            where: {
+                xApiKey: apiKey,
+            },
+        });
+
+        if (!user) {
+            throw new BadRequestException('Invalid x-api-key provided.');
+        }
+
+        return {
+            accessToken: await this.jwtService.signAsync({
+                sub: user.id,
+                email: user.email,
+            }),
+        };
     }
 }

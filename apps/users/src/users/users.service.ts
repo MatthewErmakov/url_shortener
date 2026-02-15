@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthorizedDTO } from '../auth/dto/authorized.dto';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 @Injectable()
 export class UsersService {
@@ -36,17 +37,18 @@ export class UsersService {
             throw new BadRequestException('User already registered.');
         }
 
+        console.log(`usr_${crypto.randomBytes(28).toString('hex')}`);
+
         const user = await this.usersRepository.create({
             email,
+            xApiKey: `usr_${crypto.randomBytes(28).toString('hex')}`,
             password: await bcrypt.hash(password, 10),
         });
         const saved = await this.usersRepository.save(user);
 
         return {
-            accessToken: this.jwtService.sign({
-                sub: saved.id,
-                email: saved.email,
-            }),
+            email: user.email,
+            xApiKey: user.xApiKey,
         };
     }
 
