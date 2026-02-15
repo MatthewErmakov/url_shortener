@@ -1,6 +1,7 @@
 import { ShortLink } from 'apps/shortlinks-resolver/src/shortlinks/entities/shortlink.entity';
 import { Expose } from 'class-transformer';
 import { IsNotEmpty, IsString, Matches } from 'class-validator';
+import { SubscriptionType } from '@libs/shared';
 import {
     Entity,
     PrimaryGeneratedColumn,
@@ -27,9 +28,18 @@ export class User {
     @Matches(/^usr_[a-zA-Z0-9]{56}$/)
     xApiKey: string;
 
-    @CreateDateColumn()
-    created_at: Date;
+    @Column({
+        name: 'subcription_type',
+        type: 'enum',
+        enum: SubscriptionType,
+        enumName: 'users_subscription_type_enum',
+        default: SubscriptionType.FREE,
+    })
+    subscriptionType: SubscriptionType;
 
-    @UpdateDateColumn()
+    @CreateDateColumn({ name: 'created_at' })
+    createdAt: Date;
+
+    @UpdateDateColumn({ name: 'updated_at' })
     updated_at: Date;
 }

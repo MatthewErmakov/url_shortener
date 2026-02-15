@@ -23,7 +23,9 @@
         "noFallthroughCasesInSwitch": true,
         "paths": {
             "@libs/auth-jwt": ["libs/auth-jwt/src"],
-            "@libs/auth-jwt/*": ["libs/auth-jwt/src/*"]
+            "@libs/auth-jwt/*": ["libs/auth-jwt/src/*"],
+            "@libs/shared": ["libs/shared/src"],
+            "@libs/shared/*": ["libs/shared/src/*"]
         }
     }
 }
