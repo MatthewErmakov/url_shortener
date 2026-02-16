@@ -1,26 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
+import { AccountController } from './account.controller';
 import { UsersService } from '../users/users.service';
 
-describe('AuthController', () => {
-    let controller: AuthController;
+describe('AccountController', () => {
+    let controller: AccountController;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
-            controllers: [AuthController],
+            controllers: [AccountController],
             providers: [
-                {
-                    provide: AuthService,
-                    useValue: {
-                        login: jest.fn(),
-                        generateTokenByApiKey: jest.fn(),
-                    },
-                },
                 {
                     provide: UsersService,
                     useValue: {
-                        me: jest.fn(),
                         meQuota: jest.fn(),
                         subscribe: jest.fn(),
                         unsubscribe: jest.fn(),
@@ -29,7 +20,7 @@ describe('AuthController', () => {
             ],
         }).compile();
 
-        controller = module.get<AuthController>(AuthController);
+        controller = module.get<AccountController>(AccountController);
     });
 
     it('should be defined', () => {

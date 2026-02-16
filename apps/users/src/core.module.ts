@@ -85,18 +85,6 @@ import { readFileSync } from 'fs';
                     },
                 }),
             },
-            {
-                name: 'QUOTA_SERVICE',
-                imports: [ConfigModule],
-                inject: [ConfigService],
-                useFactory: (config: ConfigService) => ({
-                    transport: Transport.TCP,
-                    options: {
-                        host: config.get<string>('QUOTA_HOST'),
-                        port: config.get<number>('QUOTA_TCP_PORT'),
-                    },
-                }),
-            },
         ]),
     ],
     controllers: [AppController],

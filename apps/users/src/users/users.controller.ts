@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateUserDTO } from './dto/create-user.dto';
-import { User } from './entities/users.entity';
 import { AuthorizedDTO } from '../auth/dto/authorized.dto';
+import { SubscriptionType } from '@libs/shared';
 
 @Controller()
 export class UsersController {
@@ -15,5 +15,13 @@ export class UsersController {
             createUserDTO.email,
             createUserDTO.password,
         );
+    }
+
+    @MessagePattern({ cmd: 'get_user_subscription_type' })
+    async getUserSubscriptionType(@Payload() payload: { userId: string }): Promise<{
+        userId: string;
+        subscriptionType: SubscriptionType;
+    }> {
+        return this.usersService.getUserSubscriptionType(payload.userId);
     }
 }

@@ -48,24 +48,6 @@ services:
         networks:
             - url-shortener-network
 
-    quota:
-        build:
-            context: .
-            dockerfile: apps/quota/Dockerfile
-        container_name: quota
-        restart: unless-stopped
-        env_file:
-            - .env
-        environment:
-            PORT: ${QUOTA_HTTP_PORT}
-            DATABASE_URL: ${DATABASE_URL}
-        ports:
-            - '${QUOTA_HTTP_PORT}:${QUOTA_HTTP_PORT}'
-        expose:
-            - '${QUOTA_TCP_PORT}'
-        networks:
-            - url-shortener-network
-
     db:
         image: postgres:16
         container_name: url-shortener-db

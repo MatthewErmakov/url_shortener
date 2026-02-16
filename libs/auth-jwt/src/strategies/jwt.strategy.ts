@@ -16,7 +16,7 @@ export class JwtApiKeyStrategy extends PassportStrategy(
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
                 (req: Request) => {
-                    const auth = req?.headers['authorization'] as string;
+                    const auth = req?.headers?.['authorization'] as string;
                     return auth?.replace(/^Bearer\s+/i, '');
                 },
             ]),
