@@ -83,6 +83,12 @@
         "transform": {
             "^.+\\.(t|j)s$": "ts-jest"
         },
+        "moduleNameMapper": {
+            "^@libs/auth-jwt$": "<rootDir>/libs/auth-jwt/src/index.ts",
+            "^@libs/auth-jwt/(.*)$": "<rootDir>/libs/auth-jwt/src/$1",
+            "^@libs/shared$": "<rootDir>/libs/shared/src/index.ts",
+            "^@libs/shared/(.*)$": "<rootDir>/libs/shared/src/$1"
+        },
         "collectCoverageFrom": [
             "**/*.(t|j)s"
         ],
