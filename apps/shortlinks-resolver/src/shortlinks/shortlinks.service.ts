@@ -27,6 +27,13 @@ import {
     ShortLinkResponse,
 } from './dto/paginated-shortlinks-response.dto';
 
+export type UserMonthlyShortlinksUsage = {
+    userId: string;
+    createdCount: number;
+    periodStart: string;
+    periodEnd: string;
+};
+
 @Injectable()
 export class ShortlinksService {
     private static readonly DEFAULT_LIMIT = 50;
@@ -141,12 +148,12 @@ export class ShortlinksService {
 
     async update(
         user: JwtPayload,
-        id: number,
+        shortCode: string,
         updateShortlinkDto: UpdateShortlinkDto,
     ): Promise<ShortLinkResponse> {
         const shortLink = await this.shortLinkRepo.findOne({
             where: {
-                id,
+                shortCode,
                 userId: user.sub,
             },
         });
@@ -192,7 +199,7 @@ export class ShortlinksService {
             const exists = await this.shortLinkRepo.exists({
                 where: {
                     shortCode: shortCodeRequested,
-                    id: Not(id),
+                    id: Not(shortLink.id),
                 },
             });
 
@@ -210,10 +217,10 @@ export class ShortlinksService {
         return response;
     }
 
-    async remove(user: JwtPayload, id: number): Promise<void> {
+    async remove(user: JwtPayload, shortCode: string): Promise<void> {
         const shortLink = await this.shortLinkRepo.findOne({
             where: {
-                id,
+                shortCode,
                 userId: user.sub,
             },
         });
@@ -224,6 +231,31 @@ export class ShortlinksService {
 
         await this.shortLinkRepo.remove(shortLink);
         this.emitShortlinkDeletedEvent(shortLink);
+    }
+
+    async getUserMonthlyShortlinksUsage(
+        userId: string,
+    ): Promise<UserMonthlyShortlinksUsage> {
+        const parsedUserId = Number(userId);
+
+        if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+            throw new BadRequestException('Invalid userId.');
+        }
+
+        const { start, end } = this.getCurrentMonthUtcRange();
+        const createdCount = await this.shortLinkRepo.count({
+            where: {
+                userId: String(parsedUserId),
+                createdAt: And(MoreThanOrEqual(start), LessThan(end)),
+            },
+        });
+
+        return {
+            userId: String(parsedUserId),
+            createdCount,
+            periodStart: start.toISOString(),
+            periodEnd: end.toISOString(),
+        };
     }
 
     private resolveLimit(limit?: number): number {

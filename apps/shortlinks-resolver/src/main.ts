@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Transport } from '@nestjs/microservices';
 import { ValidationPipe } from '@nestjs/common';
+import { GlobalHttpExceptionFilter } from '@libs/shared';
 
 async function bootstrap() {
     const host = process.env.SHORTLINKS_RESOLVER_HOST ?? 'localhost';
@@ -16,6 +17,8 @@ async function bootstrap() {
         transport: Transport.TCP,
         options: { host, port },
     });
+
+    app.useGlobalFilters(new GlobalHttpExceptionFilter());
 
     app.useGlobalPipes(
         new ValidationPipe({

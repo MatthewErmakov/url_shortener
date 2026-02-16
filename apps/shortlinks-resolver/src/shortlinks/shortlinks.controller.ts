@@ -12,6 +12,7 @@ import {
     ParseArrayPipe,
     Query,
 } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ShortlinksService } from './shortlinks.service';
 import { CreateShortlinkDto } from './dto/create-shortlink.dto';
 import { UpdateShortlinkDto } from './dto/update-shortlink.dto';
@@ -23,12 +24,21 @@ import {
     ShortLinkResponse,
 } from './dto/paginated-shortlinks-response.dto';
 
-@UseGuards(ApiKeyGuard)
 @Controller('shortlinks')
 export class ShortlinksController {
     constructor(private readonly shortlinksService: ShortlinksService) {}
 
+    @MessagePattern({ cmd: 'get_user_monthly_shortlinks_usage' })
+    async getUserMonthlyShortlinksUsage(
+        @Payload() payload: { userId: string },
+    ) {
+        return this.shortlinksService.getUserMonthlyShortlinksUsage(
+            payload.userId,
+        );
+    }
+
     @Post()
+    @UseGuards(ApiKeyGuard)
     async createOne(
         @Req() req: AuthenticatedRequest,
         @Body() createShortlinkDto: CreateShortlinkDto,
@@ -37,6 +47,7 @@ export class ShortlinksController {
     }
 
     @Post('bulk')
+    @UseGuards(ApiKeyGuard)
     async createMany(
         @Req() req: AuthenticatedRequest,
         @Body(
@@ -55,6 +66,7 @@ export class ShortlinksController {
     }
 
     @Get()
+    @UseGuards(ApiKeyGuard)
     findAll(
         @Req() req: AuthenticatedRequest,
         @Query() query: GetShortlinksQueryDto,
@@ -67,6 +79,7 @@ export class ShortlinksController {
     }
 
     @Get(':shortcode')
+    @UseGuards(ApiKeyGuard)
     findOne(
         @Req() req: AuthenticatedRequest,
         @Param('shortcode') shortCode: string,
@@ -74,25 +87,27 @@ export class ShortlinksController {
         return this.shortlinksService.findOne(req.user, shortCode);
     }
 
-    @Patch(':id')
+    @Patch(':shortcode')
+    @UseGuards(ApiKeyGuard)
     update(
         @Req() req: AuthenticatedRequest,
-        @Param('id') id: string,
+        @Param('shortcode') shortCode: string,
         @Body() updateShortlinkDto: UpdateShortlinkDto,
     ): Promise<ShortLinkResponse> {
         return this.shortlinksService.update(
             req.user,
-            +id,
+            shortCode,
             updateShortlinkDto,
         );
     }
 
     @HttpCode(204)
-    @Delete(':id')
+    @Delete(':shortcode')
+    @UseGuards(ApiKeyGuard)
     remove(
         @Req() req: AuthenticatedRequest,
-        @Param('id') id: string,
+        @Param('shortcode') shortCode: string,
     ): Promise<void> {
-        return this.shortlinksService.remove(req.user, +id);
+        return this.shortlinksService.remove(req.user, shortCode);
     }
 }

@@ -97,7 +97,7 @@ describe('ShortlinksService', () => {
         shortLinkRepo.findOne.mockResolvedValue(null);
 
         await expect(
-            service.update({ sub: '1', email: 'u@example.com' }, 1, {
+            service.update({ sub: '1', email: 'u@example.com' }, 'abc12345', {
                 originalUrl: 'https://example.com',
             }),
         ).rejects.toBeInstanceOf(NotFoundException);
@@ -121,7 +121,7 @@ describe('ShortlinksService', () => {
         );
 
         await expect(
-            service.update({ sub: '1', email: 'u@example.com' }, 1, {
+            service.update({ sub: '1', email: 'u@example.com' }, 'oldcode1', {
                 shortCode: 'newcode1',
             }),
         ).rejects.toBeInstanceOf(ForbiddenException);
@@ -139,7 +139,7 @@ describe('ShortlinksService', () => {
         });
         shortLinkRepo.remove.mockResolvedValue(undefined);
 
-        await service.remove({ sub: '1', email: 'u@example.com' }, 1);
+        await service.remove({ sub: '1', email: 'u@example.com' }, 'oldcode1');
 
         expect(shortLinkRepo.remove).toHaveBeenCalled();
         expect(analyticsClient.emit).toHaveBeenCalledWith(
