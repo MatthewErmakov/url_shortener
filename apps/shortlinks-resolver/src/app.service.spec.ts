@@ -3,6 +3,7 @@ import { AppService } from './app.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ShortLink } from './shortlinks/entities/shortlink.entity';
 import { NotFoundException } from '@nestjs/common';
+import type { Request } from 'express';
 
 describe('AppService', () => {
     let service: AppService;
@@ -66,6 +67,10 @@ describe('AppService', () => {
                 userAgent: 'jest-agent',
             }),
         );
+        expect(shortLinkRepo.findOne).toHaveBeenCalledWith({
+            where: { shortCode: 'abc12345' },
+            select: ['id', 'userId', 'shortCode', 'originalUrl', 'expiresAt'],
+        });
     });
 
     it('throws not found when shortcode does not exist', async () => {
@@ -100,5 +105,64 @@ describe('AppService', () => {
         ).rejects.toBeInstanceOf(NotFoundException);
 
         expect(analyticsClient.emit).not.toHaveBeenCalled();
+    });
+
+    it('extracts first IP from x-forwarded-for string header', () => {
+        const request = {
+            headers: {
+                'x-forwarded-for': '203.0.113.10, 198.51.100.2',
+            },
+            ip: '127.0.0.1',
+        } as unknown as Request;
+
+        expect(service.extractIpAddress(request)).toBe('203.0.113.10');
+    });
+
+    it('extracts first IP from x-forwarded-for array header', () => {
+        const request = {
+            headers: {
+                'x-forwarded-for': ['203.0.113.10, 198.51.100.2'],
+            },
+            ip: '127.0.0.1',
+        } as unknown as Request;
+
+        expect(service.extractIpAddress(request)).toBe('203.0.113.10');
+    });
+
+    it('falls back to req.ip when x-forwarded-for is missing', () => {
+        const request = {
+            headers: {},
+            ip: '127.0.0.1',
+        } as unknown as Request;
+
+        expect(service.extractIpAddress(request)).toBe('127.0.0.1');
+    });
+
+    it('extracts user-agent from string header', () => {
+        const request = {
+            headers: {
+                'user-agent': 'Mozilla/5.0',
+            },
+        } as unknown as Request;
+
+        expect(service.extractUserAgent(request)).toBe('Mozilla/5.0');
+    });
+
+    it('extracts user-agent from array header', () => {
+        const request = {
+            headers: {
+                'user-agent': ['Mozilla/5.0'],
+            },
+        } as unknown as Request;
+
+        expect(service.extractUserAgent(request)).toBe('Mozilla/5.0');
+    });
+
+    it('returns null when user-agent header is missing', () => {
+        const request = {
+            headers: {},
+        } as unknown as Request;
+
+        expect(service.extractUserAgent(request)).toBeNull();
     });
 });
