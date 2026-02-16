@@ -1,6 +1,11 @@
-import { ShortLink } from '../entities/shortlink.entity';
-
-export type ShortLinkResponse = ShortLink & { shortenedUrl: string };
+export type ShortLinkResponse = {
+    shortCode: string;
+    originalUrl: string;
+    expiresAt?: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    shortenedUrl: string;
+};
 
 export class PaginatedShortlinksResponseDto {
     data: ShortLinkResponse[];

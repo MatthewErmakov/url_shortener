@@ -67,7 +67,7 @@ export class ShortlinksService {
         ]);
 
         this.emitShortlinkCreatedEvent(created);
-        return created;
+        return this.toShortLinkResponse(created);
     }
 
     async createMany(
@@ -83,7 +83,9 @@ export class ShortlinksService {
             this.emitShortlinkCreatedEvent(shortlink);
         });
 
-        return createdShortlinks;
+        return createdShortlinks.map((shortlink) =>
+            this.toShortLinkResponse(shortlink),
+        );
     }
 
     async findAll(
@@ -113,10 +115,9 @@ export class ShortlinksService {
         ]);
 
         return {
-            data: shortLinks.map((shortLink) => ({
-                ...shortLink,
-                shortenedUrl: this.buildShortenedUrl(shortLink.shortCode),
-            })),
+            data: shortLinks.map((shortLink) =>
+                this.toShortLinkResponse(shortLink),
+            ),
             pagination: {
                 limit: safeLimit,
                 offset: safeOffset,
@@ -137,10 +138,7 @@ export class ShortlinksService {
                 },
             });
 
-            return {
-                ...shortLink,
-                shortenedUrl: this.buildShortenedUrl(shortLink.shortCode),
-            };
+            return this.toShortLinkResponse(shortLink);
         } catch (error) {
             throw new NotFoundException('Shortlink not found.');
         }
@@ -211,10 +209,8 @@ export class ShortlinksService {
         }
 
         const savedShortlink = await this.shortLinkRepo.save(shortLink);
-        const response = this.toShortLinkResponse(savedShortlink);
-
-        this.emitShortlinkUpdatedEvent(response);
-        return response;
+        this.emitShortlinkUpdatedEvent(savedShortlink);
+        return this.toShortLinkResponse(savedShortlink);
     }
 
     async remove(user: JwtPayload, shortCode: string): Promise<void> {
@@ -317,7 +313,7 @@ export class ShortlinksService {
     private async createWithMonthlyLimit(
         user: JwtPayload,
         createShortlinkDto: CreateShortlinkDto[],
-    ): Promise<ShortLinkResponse[]> {
+    ): Promise<ShortLink[]> {
         const userId = user.sub;
         const lockKey = Number(user.sub);
         const dtos = createShortlinkDto;
@@ -349,7 +345,7 @@ export class ShortlinksService {
                 );
             }
 
-            const shortLinks: ShortLinkResponse[] = [];
+            const shortLinks: ShortLink[] = [];
 
             for (const dto of dtos) {
                 const shortCodeRequested = dto.shortCode?.trim();
@@ -385,7 +381,7 @@ export class ShortlinksService {
 
                 const savedShortLink = await txRepo.save(shortLink);
 
-                shortLinks.push(this.toShortLinkResponse(savedShortLink));
+                shortLinks.push(savedShortLink);
             }
 
             return shortLinks;
@@ -394,12 +390,16 @@ export class ShortlinksService {
 
     private toShortLinkResponse(shortLink: ShortLink): ShortLinkResponse {
         return {
-            ...shortLink,
+            shortCode: shortLink.shortCode,
+            originalUrl: shortLink.originalUrl,
+            expiresAt: shortLink.expiresAt ?? null,
+            createdAt: shortLink.createdAt,
+            updatedAt: shortLink.updatedAt,
             shortenedUrl: this.buildShortenedUrl(shortLink.shortCode),
         };
     }
 
-    private emitShortlinkCreatedEvent(shortlink: ShortLinkResponse): void {
+    private emitShortlinkCreatedEvent(shortlink: ShortLink): void {
         this.analyticsClient
             .emit(
                 { cmd: 'shortlink_created' },
@@ -421,7 +421,7 @@ export class ShortlinksService {
             });
     }
 
-    private emitShortlinkUpdatedEvent(shortlink: ShortLinkResponse): void {
+    private emitShortlinkUpdatedEvent(shortlink: ShortLink): void {
         this.analyticsClient
             .emit(
                 { cmd: 'shortlink_updated' },

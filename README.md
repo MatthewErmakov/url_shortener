@@ -240,12 +240,10 @@ Response:
 
 ```json
 {
-    "id": 1,
-    "user_id": "1",
-    "short_code": "mycode01",
-    "original_url": "https://google.com",
-    "expires_at": "2026-02-15T23:23:45.423Z",
-    "created_at": "2026-02-16T10:00:00.000Z",
+  "short_code": "mycode01",
+  "original_url": "https://google.com",
+  "expires_at": "2026-02-15T23:23:45.423Z",
+  "created_at": "2026-02-16T10:00:00.000Z",
     "updated_at": "2026-02-16T10:00:00.000Z",
     "shortened_url": "http://localhost:3004/r/mycode01"
 }
@@ -288,13 +286,11 @@ Response:
 
 ```json
 {
-    "data": [
-        {
-            "id": 1,
-            "user_id": "1",
-            "short_code": "abc12345",
-            "original_url": "https://google.com",
-            "expires_at": null,
+  "data": [
+    {
+      "short_code": "abc12345",
+      "original_url": "https://google.com",
+      "expires_at": null,
             "created_at": "2026-02-16T10:00:00.000Z",
             "updated_at": "2026-02-16T10:00:00.000Z",
             "shortened_url": "http://localhost:3004/r/abc12345"
