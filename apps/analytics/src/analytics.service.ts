@@ -10,8 +10,12 @@ import { firstValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
 import { SubscriptionType } from '@libs/shared';
 import { Analytics } from './entities/analytics.entity';
+import { ShortlinkReflection } from './entities/shortlink-reflection.entity';
 import { TrackShortlinkClickEventDto } from './dto/track-shortlink-click-event.dto';
 import { ShortlinkAnalyticsResponseDto } from './dto/shortlink-analytics-response.dto';
+import { ShortlinkCreatedEventDto } from './dto/shortlink-created-event.dto';
+import { ShortlinkUpdatedEventDto } from './dto/shortlink-updated-event.dto';
+import { ShortlinkDeletedEventDto } from './dto/shortlink-deleted-event.dto';
 
 @Injectable()
 export class AnalyticsService {
@@ -24,6 +28,9 @@ export class AnalyticsService {
 
         @InjectRepository(Analytics)
         private readonly analyticsRepository: Repository<Analytics>,
+
+        @InjectRepository(ShortlinkReflection)
+        private readonly shortlinkReflectionRepository: Repository<ShortlinkReflection>,
     ) {}
 
     async recordClick(event: TrackShortlinkClickEventDto): Promise<void> {
@@ -46,19 +53,24 @@ export class AnalyticsService {
         offset?: number,
     ): Promise<ShortlinkAnalyticsResponseDto> {
         await this.assertProUser(userId);
+        const shortlinkId = await this.assertShortlinkExistsAndOwned(
+            userId,
+            shortCode,
+        );
 
         const safeLimit = this.resolveLimit(limit);
         const safeOffset = this.resolveOffset(offset);
 
-        const whereClause = {
-            ownerUserId: userId,
-            shortCode: shortCode,
-        };
-
         const [totalClicks, clickHistory] = await Promise.all([
-            this.analyticsRepository.count({ where: whereClause }),
+            this.analyticsRepository.count({
+                where: {
+                    shortlinkId: shortlinkId,
+                },
+            }),
             this.analyticsRepository.find({
-                where: whereClause,
+                where: {
+                    shortlinkId: shortlinkId,
+                },
                 order: { clickedAt: 'DESC' },
                 take: safeLimit,
                 skip: safeOffset,
@@ -66,7 +78,7 @@ export class AnalyticsService {
         ]);
 
         return {
-            short_code: shortCode,
+            shortcode: shortCode,
             total_clicks: totalClicks,
             history: clickHistory.map((item) => ({
                 timestamp: item.clickedAt.toISOString(),
@@ -78,6 +90,31 @@ export class AnalyticsService {
                 offset: safeOffset,
             },
         };
+    }
+
+    async upsertShortlinkReflection(
+        event: ShortlinkCreatedEventDto | ShortlinkUpdatedEventDto,
+    ): Promise<void> {
+        await this.shortlinkReflectionRepository.upsert(
+            {
+                shortlinkId: event.shortlinkId,
+                ownerUserId: event.ownerUserId,
+                shortCode: event.shortCode,
+                createdAt: new Date(event.createdAt),
+                updatedAt: new Date(event.updatedAt),
+            },
+            {
+                conflictPaths: ['shortlinkId'],
+            },
+        );
+    }
+
+    async deleteShortlinkReflection(
+        event: ShortlinkDeletedEventDto,
+    ): Promise<void> {
+        await this.shortlinkReflectionRepository.delete({
+            shortlinkId: event.shortlinkId,
+        });
     }
 
     private resolveLimit(limit?: number): number {
@@ -94,6 +131,25 @@ export class AnalyticsService {
         }
 
         return Math.max(offset, 0);
+    }
+
+    private async assertShortlinkExistsAndOwned(
+        userId: string,
+        shortCode: string,
+    ): Promise<number> {
+        const reflection = await this.shortlinkReflectionRepository.findOne({
+            where: {
+                ownerUserId: userId,
+                shortCode: shortCode,
+            },
+            select: ['shortlinkId'],
+        });
+
+        if (!reflection) {
+            throw new NotFoundException('Shortlink not found.');
+        }
+
+        return reflection.shortlinkId;
     }
 
     private async assertProUser(userId: string): Promise<void> {

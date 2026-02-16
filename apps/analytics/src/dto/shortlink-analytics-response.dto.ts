@@ -5,7 +5,7 @@ export class ShortlinkAnalyticsHistoryItemDto {
 }
 
 export class ShortlinkAnalyticsResponseDto {
-    short_code: string;
+    shortcode: string;
     total_clicks: number;
     history: ShortlinkAnalyticsHistoryItemDto[];
     pagination: {

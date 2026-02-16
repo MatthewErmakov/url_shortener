@@ -8,7 +8,7 @@ export class Analytics {
     @Column({ name: 'shortlink_id', type: 'int' })
     shortlinkId: number;
 
-    @Column({ name: 'short_code', type: 'varchar', length: 8 })
+    @Column({ name: 'shortcode', type: 'varchar', length: 8 })
     shortCode: string;
 
     @Column({ name: 'owner_user_id', type: 'varchar' })

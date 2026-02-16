@@ -6,6 +6,9 @@ import type { AuthenticatedRequest } from '@libs/auth-jwt/interfaces/authenticat
 import { TrackShortlinkClickEventDto } from './dto/track-shortlink-click-event.dto';
 import { GetShortlinkAnalyticsQueryDto } from './dto/get-shortlink-analytics-query.dto';
 import { ShortlinkAnalyticsResponseDto } from './dto/shortlink-analytics-response.dto';
+import { ShortlinkCreatedEventDto } from './dto/shortlink-created-event.dto';
+import { ShortlinkUpdatedEventDto } from './dto/shortlink-updated-event.dto';
+import { ShortlinkDeletedEventDto } from './dto/shortlink-deleted-event.dto';
 
 @Controller()
 export class AnalyticsController {
@@ -16,6 +19,27 @@ export class AnalyticsController {
         @Payload() payload: TrackShortlinkClickEventDto,
     ): Promise<void> {
         await this.analyticsService.recordClick(payload);
+    }
+
+    @EventPattern({ cmd: 'shortlink_created' })
+    async trackShortlinkCreated(
+        @Payload() payload: ShortlinkCreatedEventDto,
+    ): Promise<void> {
+        await this.analyticsService.upsertShortlinkReflection(payload);
+    }
+
+    @EventPattern({ cmd: 'shortlink_updated' })
+    async trackShortlinkUpdated(
+        @Payload() payload: ShortlinkUpdatedEventDto,
+    ): Promise<void> {
+        await this.analyticsService.upsertShortlinkReflection(payload);
+    }
+
+    @EventPattern({ cmd: 'shortlink_deleted' })
+    async trackShortlinkDeleted(
+        @Payload() payload: ShortlinkDeletedEventDto,
+    ): Promise<void> {
+        await this.analyticsService.deleteShortlinkReflection(payload);
     }
 
     @UseGuards(ApiKeyGuard)

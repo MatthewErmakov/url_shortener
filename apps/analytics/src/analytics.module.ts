@@ -3,6 +3,7 @@ import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Analytics } from './entities/analytics.entity';
+import { ShortlinkReflection } from './entities/shortlink-reflection.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { ClientsModule, Transport } from '@nestjs/microservices';
@@ -55,11 +56,11 @@ import { AuthJwtModule } from '@libs/auth-jwt';
                 buildTypeOrmOptions({
                     configService: config,
                     schema: 'analytics',
-                    entities: [Analytics],
+                    entities: [Analytics, ShortlinkReflection],
                 }),
         }),
 
-        TypeOrmModule.forFeature([Analytics]),
+        TypeOrmModule.forFeature([Analytics, ShortlinkReflection]),
     ],
     controllers: [AnalyticsController],
     providers: [AnalyticsService],

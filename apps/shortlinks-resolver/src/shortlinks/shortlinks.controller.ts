@@ -6,6 +6,7 @@ import {
     Patch,
     Param,
     Delete,
+    HttpCode,
     UseGuards,
     Req,
     ParseArrayPipe,
@@ -16,9 +17,11 @@ import { CreateShortlinkDto } from './dto/create-shortlink.dto';
 import { UpdateShortlinkDto } from './dto/update-shortlink.dto';
 import { ApiKeyGuard } from '@libs/auth-jwt';
 import type { AuthenticatedRequest } from '@libs/auth-jwt/interfaces/authenticated-request.interface';
-import { ShortLink } from './entities/shortlink.entity';
 import { GetShortlinksQueryDto } from './dto/get-shortlinks-query.dto';
-import { PaginatedShortlinksResponseDto } from './dto/paginated-shortlinks-response.dto';
+import {
+    PaginatedShortlinksResponseDto,
+    ShortLinkResponse,
+} from './dto/paginated-shortlinks-response.dto';
 
 @UseGuards(ApiKeyGuard)
 @Controller('shortlinks')
@@ -29,7 +32,7 @@ export class ShortlinksController {
     async createOne(
         @Req() req: AuthenticatedRequest,
         @Body() createShortlinkDto: CreateShortlinkDto,
-    ): Promise<ShortLink> {
+    ): Promise<ShortLinkResponse> {
         return this.shortlinksService.createOne(req.user, createShortlinkDto);
     }
 
@@ -44,7 +47,7 @@ export class ShortlinksController {
             }),
         )
         createShortlinkDtoArr: CreateShortlinkDto[],
-    ): Promise<ShortLink[]> {
+    ): Promise<ShortLinkResponse[]> {
         return this.shortlinksService.createMany(
             req.user,
             createShortlinkDtoArr,
@@ -73,14 +76,23 @@ export class ShortlinksController {
 
     @Patch(':id')
     update(
+        @Req() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() updateShortlinkDto: UpdateShortlinkDto,
-    ) {
-        return this.shortlinksService.update(+id, updateShortlinkDto);
+    ): Promise<ShortLinkResponse> {
+        return this.shortlinksService.update(
+            req.user,
+            +id,
+            updateShortlinkDto,
+        );
     }
 
+    @HttpCode(204)
     @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.shortlinksService.remove(+id);
+    remove(
+        @Req() req: AuthenticatedRequest,
+        @Param('id') id: string,
+    ): Promise<void> {
+        return this.shortlinksService.remove(req.user, +id);
     }
 }

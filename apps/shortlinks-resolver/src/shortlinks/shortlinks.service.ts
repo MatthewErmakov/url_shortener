@@ -10,7 +10,13 @@ import { CreateShortlinkDto } from './dto/create-shortlink.dto';
 import { UpdateShortlinkDto } from './dto/update-shortlink.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ShortLink } from './entities/shortlink.entity';
-import { And, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+    And,
+    LessThan,
+    MoreThanOrEqual,
+    Not,
+    Repository,
+} from 'typeorm';
 import { JwtPayload } from '@libs/auth-jwt';
 import { SubscriptionType } from '@libs/shared';
 import crypto from 'crypto';
@@ -38,6 +44,9 @@ export class ShortlinksService {
         @Inject('USERS_SERVICE')
         private readonly usersClient: ClientProxy,
 
+        @Inject('ANALYTICS_SERVICE')
+        private readonly analyticsClient: ClientProxy,
+
         @InjectRepository(ShortLink)
         private readonly shortLinkRepo: Repository<ShortLink>,
     ) {}
@@ -49,6 +58,8 @@ export class ShortlinksService {
         const [created] = await this.createWithMonthlyLimit(user, [
             createShortlinkDto,
         ]);
+
+        this.emitShortlinkCreatedEvent(created);
         return created;
     }
 
@@ -56,7 +67,16 @@ export class ShortlinksService {
         user: JwtPayload,
         createShortlinkDto: CreateShortlinkDto[],
     ): Promise<ShortLinkResponse[]> {
-        return this.createWithMonthlyLimit(user, createShortlinkDto);
+        const createdShortlinks = await this.createWithMonthlyLimit(
+            user,
+            createShortlinkDto,
+        );
+
+        createdShortlinks.forEach((shortlink) => {
+            this.emitShortlinkCreatedEvent(shortlink);
+        });
+
+        return createdShortlinks;
     }
 
     async findAll(
@@ -119,12 +139,91 @@ export class ShortlinksService {
         }
     }
 
-    update(id: number, updateShortlinkDto: UpdateShortlinkDto) {
-        return `This action updates a #${id} shortlink`;
+    async update(
+        user: JwtPayload,
+        id: number,
+        updateShortlinkDto: UpdateShortlinkDto,
+    ): Promise<ShortLinkResponse> {
+        const shortLink = await this.shortLinkRepo.findOne({
+            where: {
+                id,
+                userId: user.sub,
+            },
+        });
+
+        if (!shortLink) {
+            throw new NotFoundException('Shortlink not found.');
+        }
+
+        const hasAnyPatchField =
+            updateShortlinkDto.originalUrl !== undefined ||
+            updateShortlinkDto.expiresAt !== undefined ||
+            updateShortlinkDto.shortCode !== undefined;
+
+        if (!hasAnyPatchField) {
+            return this.toShortLinkResponse(shortLink);
+        }
+
+        if (updateShortlinkDto.originalUrl !== undefined) {
+            shortLink.originalUrl = updateShortlinkDto.originalUrl;
+        }
+
+        if (updateShortlinkDto.expiresAt !== undefined) {
+            shortLink.expiresAt = this.parseAndValidateExpiresAt(
+                updateShortlinkDto.expiresAt,
+            );
+        }
+
+        const shortCodeRequested = updateShortlinkDto.shortCode?.trim();
+        const isShortCodeChanged =
+            shortCodeRequested &&
+            shortCodeRequested.length > 0 &&
+            shortCodeRequested !== shortLink.shortCode;
+
+        if (isShortCodeChanged) {
+            const subscriptionType = await this.getUserSubscriptionType(user);
+
+            if (subscriptionType !== SubscriptionType.PRO) {
+                throw new ForbiddenException(
+                    'Custom short codes are available for Pro users.',
+                );
+            }
+
+            const exists = await this.shortLinkRepo.exists({
+                where: {
+                    shortCode: shortCodeRequested,
+                    id: Not(id),
+                },
+            });
+
+            if (exists) {
+                throw new ConflictException('Shortcode already taken.');
+            }
+
+            shortLink.shortCode = shortCodeRequested;
+        }
+
+        const savedShortlink = await this.shortLinkRepo.save(shortLink);
+        const response = this.toShortLinkResponse(savedShortlink);
+
+        this.emitShortlinkUpdatedEvent(response);
+        return response;
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} shortlink`;
+    async remove(user: JwtPayload, id: number): Promise<void> {
+        const shortLink = await this.shortLinkRepo.findOne({
+            where: {
+                id,
+                userId: user.sub,
+            },
+        });
+
+        if (!shortLink) {
+            throw new NotFoundException('Shortlink not found.');
+        }
+
+        await this.shortLinkRepo.remove(shortLink);
+        this.emitShortlinkDeletedEvent(shortLink);
     }
 
     private resolveLimit(limit?: number): number {
@@ -254,16 +353,82 @@ export class ShortlinksService {
 
                 const savedShortLink = await txRepo.save(shortLink);
 
-                shortLinks.push({
-                    ...savedShortLink,
-                    shortenedUrl: this.buildShortenedUrl(
-                        savedShortLink.shortCode,
-                    ),
-                });
+                shortLinks.push(this.toShortLinkResponse(savedShortLink));
             }
 
             return shortLinks;
         });
+    }
+
+    private toShortLinkResponse(shortLink: ShortLink): ShortLinkResponse {
+        return {
+            ...shortLink,
+            shortenedUrl: this.buildShortenedUrl(shortLink.shortCode),
+        };
+    }
+
+    private emitShortlinkCreatedEvent(shortlink: ShortLinkResponse): void {
+        this.analyticsClient
+            .emit(
+                { cmd: 'shortlink_created' },
+                {
+                    shortlinkId: shortlink.id,
+                    ownerUserId: shortlink.userId,
+                    shortCode: shortlink.shortCode,
+                    createdAt: shortlink.createdAt.toISOString(),
+                    updatedAt: shortlink.updatedAt.toISOString(),
+                },
+            )
+            .subscribe({
+                error: (error) => {
+                    console.error(
+                        '[ShortlinksService] Failed to emit shortlink_created event',
+                        error,
+                    );
+                },
+            });
+    }
+
+    private emitShortlinkUpdatedEvent(shortlink: ShortLinkResponse): void {
+        this.analyticsClient
+            .emit(
+                { cmd: 'shortlink_updated' },
+                {
+                    shortlinkId: shortlink.id,
+                    ownerUserId: shortlink.userId,
+                    shortCode: shortlink.shortCode,
+                    createdAt: shortlink.createdAt.toISOString(),
+                    updatedAt: shortlink.updatedAt.toISOString(),
+                },
+            )
+            .subscribe({
+                error: (error) => {
+                    console.error(
+                        '[ShortlinksService] Failed to emit shortlink_updated event',
+                        error,
+                    );
+                },
+            });
+    }
+
+    private emitShortlinkDeletedEvent(shortlink: ShortLink): void {
+        this.analyticsClient
+            .emit(
+                { cmd: 'shortlink_deleted' },
+                {
+                    shortlinkId: shortlink.id,
+                    ownerUserId: shortlink.userId,
+                    shortCode: shortlink.shortCode,
+                },
+            )
+            .subscribe({
+                error: (error) => {
+                    console.error(
+                        '[ShortlinksService] Failed to emit shortlink_deleted event',
+                        error,
+                    );
+                },
+            });
     }
 
     private buildShortenedUrl(shortCode: string): string {

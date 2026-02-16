@@ -8,12 +8,16 @@ describe('AnalyticsController', () => {
     let analyticsService: {
         recordClick: jest.Mock;
         getShortlinkAnalytics: jest.Mock;
+        upsertShortlinkReflection: jest.Mock;
+        deleteShortlinkReflection: jest.Mock;
     };
 
     beforeEach(async () => {
         const serviceMock = {
             recordClick: jest.fn(),
             getShortlinkAnalytics: jest.fn(),
+            upsertShortlinkReflection: jest.fn(),
+            deleteShortlinkReflection: jest.fn(),
         };
 
         const app: TestingModule = await Test.createTestingModule({
@@ -47,7 +51,7 @@ describe('AnalyticsController', () => {
 
     it('returns analytics payload from service', async () => {
         analyticsService.getShortlinkAnalytics.mockResolvedValue({
-            short_code: 'abc12345',
+            shortcode: 'abc12345',
             total_clicks: 1,
             history: [],
             pagination: { limit: 50, offset: 0 },
@@ -69,6 +73,52 @@ describe('AnalyticsController', () => {
             'abc12345',
             50,
             0,
+        );
+    });
+
+    it('delegates shortlink created event to service', async () => {
+        const payload = {
+            shortlinkId: 1,
+            ownerUserId: '1',
+            shortCode: 'abc12345',
+            createdAt: '2026-02-16T01:00:00.000Z',
+            updatedAt: '2026-02-16T01:00:00.000Z',
+        };
+
+        await analyticsController.trackShortlinkCreated(payload);
+
+        expect(analyticsService.upsertShortlinkReflection).toHaveBeenCalledWith(
+            payload,
+        );
+    });
+
+    it('delegates shortlink deleted event to service', async () => {
+        const payload = {
+            shortlinkId: 1,
+            ownerUserId: '1',
+            shortCode: 'abc12345',
+        };
+
+        await analyticsController.trackShortlinkDeleted(payload);
+
+        expect(analyticsService.deleteShortlinkReflection).toHaveBeenCalledWith(
+            payload,
+        );
+    });
+
+    it('delegates shortlink updated event to service', async () => {
+        const payload = {
+            shortlinkId: 1,
+            ownerUserId: '1',
+            shortCode: 'abc12345',
+            createdAt: '2026-02-16T01:00:00.000Z',
+            updatedAt: '2026-02-16T02:00:00.000Z',
+        };
+
+        await analyticsController.trackShortlinkUpdated(payload);
+
+        expect(analyticsService.upsertShortlinkReflection).toHaveBeenCalledWith(
+            payload,
         );
     });
 });
