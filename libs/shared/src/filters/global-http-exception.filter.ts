@@ -10,7 +10,7 @@ import { Response } from 'express';
 export type HttpErrorMessage = string | string[];
 
 export type HttpErrorResponse = {
-    statusCode: number;
+    status_code: number;
     error: string;
     message: HttpErrorMessage;
 };
@@ -55,7 +55,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
         }
 
         const body: HttpErrorResponse = {
-            statusCode: status,
+            status_code: status,
             error,
             message,
         };

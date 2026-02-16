@@ -1,7 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
 import { ValidationPipe } from '@nestjs/common';
-import { GlobalHttpExceptionFilter } from '@libs/shared';
+import {
+    GlobalHttpExceptionFilter,
+    SnakeCaseResponseInterceptor,
+} from '@libs/shared';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -19,6 +22,7 @@ async function bootstrap() {
     });
 
     app.useGlobalFilters(new GlobalHttpExceptionFilter());
+    app.useGlobalInterceptors(new SnakeCaseResponseInterceptor());
 
     app.useGlobalPipes(
         new ValidationPipe({
