@@ -1,6 +1,24 @@
 version: '3.9'
 
 services:
+    migrations:
+        build:
+            context: .
+            dockerfile: apps/users/Dockerfile
+        container_name: migrations
+        restart: 'no'
+        env_file:
+            - .env
+        environment:
+            DB_HOST: db
+            DB_SYNC: 'false'
+        command: ['npm', 'run', 'typeorm:run-migrations']
+        depends_on:
+            db:
+                condition: service_healthy
+        networks:
+            - url-shortener-network
+
     users:
         build:
             context: .
@@ -9,6 +27,16 @@ services:
         restart: unless-stopped
         env_file:
             - .env
+        environment:
+            DB_HOST: db
+            USERS_HOST: 0.0.0.0
+            ANALYTICS_HOST: analytics
+            SHORTLINKS_RESOLVER_HOST: shortlinks-resolver
+        depends_on:
+            db:
+                condition: service_healthy
+            migrations:
+                condition: service_completed_successfully
         ports:
             - '${USERS_HTTP_PORT}:${USERS_HTTP_PORT}'
         expose:
@@ -24,6 +52,17 @@ services:
         restart: unless-stopped
         env_file:
             - .env
+        environment:
+            DB_HOST: db
+            SHORTLINKS_RESOLVER_HOST: 0.0.0.0
+            SHORTLINKS_RESOLVER_PUBLIC_BASE_URL: 'http://localhost:${SHORTLINKS_RESOLVER_HTTP_PORT}'
+            USERS_HOST: users
+            ANALYTICS_HOST: analytics
+        depends_on:
+            db:
+                condition: service_healthy
+            migrations:
+                condition: service_completed_successfully
         ports:
             - '${SHORTLINKS_RESOLVER_HTTP_PORT}:${SHORTLINKS_RESOLVER_HTTP_PORT}'
         expose:
@@ -39,6 +78,16 @@ services:
         restart: unless-stopped
         env_file:
             - .env
+        environment:
+            DB_HOST: db
+            ANALYTICS_HOST: 0.0.0.0
+            USERS_HOST: users
+            SHORTLINKS_RESOLVER_HOST: shortlinks-resolver
+        depends_on:
+            db:
+                condition: service_healthy
+            migrations:
+                condition: service_completed_successfully
         ports:
             - '${ANALYTICS_HTTP_PORT}:${ANALYTICS_HTTP_PORT}'
         expose:
@@ -55,6 +104,7 @@ services:
         env_file:
             - .env
         environment:
+            DB_HOST: db
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
             POSTGRES_DB: ${DB_NAME}
